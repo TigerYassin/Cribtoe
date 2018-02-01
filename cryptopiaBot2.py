@@ -1,15 +1,26 @@
 import requests
 import time
-import datetime
+from datetime import datetime
 import json
 import sqlite3
 from threading import Thread
 from time import sleep
 
-r = requests.get("https://www.cryptopia.co.nz/api/GetMarkets/BTC").json()
+import sys
+
+
+def getRequest():
+	try:
+		r = requests.get("https://www.cryptopia.co.nz/api/GetMarkets/BTC").json()
+		return r
+	except requests.exceptions.RequestException as e:  # This is the correct syntax
+		print e
+		sys.exit(1)
+
 
 listOFpairIDs = []
 curr_dict = {}
+r = getRequest()
 for i in range(len(r["Data"])):
     pairID = r["Data"][i]["TradePairId"]
     listOFpairIDs.append(pairID)
@@ -69,13 +80,17 @@ def getSellBaseVolume(TradePairId):
 
 conn = sqlite3.connect("Coins.db")
 c = conn.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS Cryptopia(tradePairID REAL, label TEXT, askPrice REAL, bidPrice REAL, low REAL, High REAL, volume REAL, lastPrice REAL, buyVolume REAL, sellVolume REAL, change REAL, open REAL, close REAL, baseVolume REAL, buyBaseVolume REAL, sellBaseVolume REAL)") 	#ADD THESE: occuranceID REAL, time, buyBaseVolume REAL, name TEXT
+c.execute("CREATE TABLE IF NOT EXISTS Cryptopia(tradePairID REAL, label TEXT, askPrice REAL, bidPrice REAL, low REAL, High REAL, volume REAL, lastPrice REAL, buyVolume REAL, sellVolume REAL, change REAL, open REAL, close REAL, baseVolume REAL, buyBaseVolume REAL, sellBaseVolume REAL, TimeStamp REAL)") 	#ADD THESE: occuranceID REAL, time, buyBaseVolume REAL, name TEXT
 
 
 def threaded_function():
 
     for x in range(1000):
-	r = requests.get("https://www.cryptopia.co.nz/api/GetMarkets/BTC").json()
+	# t = datetime.utcnow()
+	# sleeptime = 1 - (t.second + t.microsecond/1000000.0)
+	sleeptime = 1
+
+	r = getRequest()
 
 	conn = sqlite3.connect("Coins.db")
 	c = conn.cursor()
@@ -97,14 +112,17 @@ def threaded_function():
 		BaseVolume = getBaseVolume(pairID)
 		BuyBaseVolume = getBuyBaseVolume(pairID)
 		SellBaseVolume = getSellBaseVolume(pairID)
-																#***Enter all data of every coin in Cryptopia onto a sqlite database***#
-		c.execute("INSERT INTO Cryptopia VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", (pairID,Label,AskPrice,BidPrice,Low,High,Volume,LastPrice,BuyVolume,SellVolume,Change,Open,Close,BaseVolume,BuyBaseVolume,SellBaseVolume))
+		TimeStamp = time.time()
+
+		#***Enter all data of every coin in Cryptopia onto a sqlite database***#
+		c.execute("INSERT INTO Cryptopia VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", (pairID,Label,AskPrice,BidPrice,Low,High,Volume,LastPrice,BuyVolume,SellVolume,Change,Open,Close,BaseVolume,BuyBaseVolume,SellBaseVolume,TimeStamp))
 	print "Got it", x
+	print time.time()
 
 	conn.commit()
 	# c.close()
 	# conn.close()
-        sleep(1)
+        sleep(sleeptime)
 
 
 if __name__ == "__main__":
