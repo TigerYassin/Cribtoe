@@ -18,62 +18,63 @@ def getRequest():
 		sys.exit(1)
 
 
-listOFpairIDs = []
-curr_dict = {}
-r = getRequest()
-for i in range(len(r["Data"])):
-    pairID = r["Data"][i]["TradePairId"]
-    listOFpairIDs.append(pairID)
-    curr_dict.update({str(pairID): i})
+def generateIndexes(r):
+	listOFpairIDs = []
+	curr_dict = {}
+	for i in range(len(r["Data"])):
+		pairID = r["Data"][i]["TradePairId"]
+		listOFpairIDs.append(pairID)
+		curr_dict.update({str(pairID): i})
+	return [listOFpairIDs,curr_dict]
 
 
 
-def getTradePairId(TradePairId):
+def getTradePairId(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["TradePairId"]
 
-def getLabel(TradePairId):
+def getLabel(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Label"]
 
-def getAskPrice(TradePairId):
+def getAskPrice(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["AskPrice"]
 
-def getBidPrice(TradePairId):
+def getBidPrice(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["BidPrice"]
 
-def getLow(TradePairId):
+def getLow(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Low"]
 
-def getHigh(TradePairId):
+def getHigh(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["High"]
 
-def getVolume(TradePairId):
+def getVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Volume"]
 
-def getLastPrice(TradePairId):
+def getLastPrice(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["LastPrice"]
 
-def getBuyVolume(TradePairId):
+def getBuyVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["BuyVolume"]
 
-def getSellVolume(TradePairId):
+def getSellVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["SellVolume"]
 
-def getChange(TradePairId):
+def getChange(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Change"]
 
-def getOpen(TradePairId):
+def getOpen(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Open"]
 
-def getClose(TradePairId):
+def getClose(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["Close"]
 
-def getBaseVolume(TradePairId):
+def getBaseVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["BaseVolume"]
 
-def getBuyBaseVolume(TradePairId):
+def getBuyBaseVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["BuyBaseVolume"]
 
-def getSellBaseVolume(TradePairId):
+def getSellBaseVolume(TradePairId,r,curr_dict):
 	return r["Data"][int(curr_dict.get(str(TradePairId)))]["SellBaseVolume"]
 
 
@@ -84,45 +85,48 @@ c.execute("CREATE TABLE IF NOT EXISTS Cryptopia(tradePairID REAL, label TEXT, as
 
 
 def threaded_function():
+	x = 0
+	while True:
+		# t = datetime.utcnow()
+		# sleeptime = 1 - (t.second + t.microsecond/1000000.0)
+		sleeptime = 1
+		r = getRequest()
+		listgenerated = generateIndexes(r)
+		listOFpairIDs = listgenerated[0]
+		curr_dict = listgenerated[1]
 
-    for x in range(1000):
-	# t = datetime.utcnow()
-	# sleeptime = 1 - (t.second + t.microsecond/1000000.0)
-	sleeptime = 1
+		conn = sqlite3.connect("Coins.db")
+		c = conn.cursor()
 
-	r = getRequest()
+		for i in range(len(listOFpairIDs)):
+			TradePairId = r["Data"][i]["TradePairId"]
+			Label = getLabel(TradePairId,r,curr_dict)
+			AskPrice = getAskPrice(TradePairId,r,curr_dict)
+			BidPrice = getBidPrice(TradePairId,r,curr_dict)
+			Low = getLow(TradePairId,r,curr_dict)
+			High = getHigh(TradePairId,r,curr_dict)
+			Volume = getVolume(TradePairId,r,curr_dict)
+			LastPrice = getLastPrice(TradePairId,r,curr_dict)
+			BuyVolume = getBuyVolume(TradePairId,r,curr_dict)
+			SellVolume = getSellVolume(TradePairId,r,curr_dict)
+			Change = getChange(TradePairId,r,curr_dict)
+			Open = getOpen(TradePairId,r,curr_dict)
+			Close = getClose(TradePairId,r,curr_dict)
+			BaseVolume = getBaseVolume(TradePairId,r,curr_dict)
+			BuyBaseVolume = getBuyBaseVolume(TradePairId,r,curr_dict)
+			SellBaseVolume = getSellBaseVolume(TradePairId,r,curr_dict)
+			TimeStamp = time.time()
 
-	conn = sqlite3.connect("Coins.db")
-	c = conn.cursor()
+			#***Enter all data of every coin in Cryptopia onto a sqlite database***#
+			c.execute("INSERT INTO Cryptopia VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", (TradePairId,Label,AskPrice,BidPrice,Low,High,Volume,LastPrice,BuyVolume,SellVolume,Change,Open,Close,BaseVolume,BuyBaseVolume,SellBaseVolume,TimeStamp))
+		print "Got it", x
+		x+=1
+		print time.time()
 
-	for i in range(len(listOFpairIDs)):
-		pairID = r["Data"][i]["TradePairId"]
-		Label = getLabel(pairID)
-		AskPrice = getAskPrice(pairID)
-		BidPrice = getBidPrice(pairID)
-		Low = getLow(pairID)
-		High = getHigh(pairID)
-		Volume = getVolume(pairID)
-		LastPrice = getLastPrice(pairID)
-		BuyVolume = getBuyVolume(pairID)
-		SellVolume = getSellVolume(pairID)
-		Change = getChange(pairID)
-		Open = getOpen(pairID)
-		Close = getClose(pairID)
-		BaseVolume = getBaseVolume(pairID)
-		BuyBaseVolume = getBuyBaseVolume(pairID)
-		SellBaseVolume = getSellBaseVolume(pairID)
-		TimeStamp = time.time()
-
-		#***Enter all data of every coin in Cryptopia onto a sqlite database***#
-		c.execute("INSERT INTO Cryptopia VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", (pairID,Label,AskPrice,BidPrice,Low,High,Volume,LastPrice,BuyVolume,SellVolume,Change,Open,Close,BaseVolume,BuyBaseVolume,SellBaseVolume,TimeStamp))
-	print "Got it", x
-	print time.time()
-
-	conn.commit()
-	# c.close()
-	# conn.close()
-        sleep(sleeptime)
+		conn.commit()
+		# c.close()
+		# conn.close()
+		sleep(sleeptime)
 
 
 if __name__ == "__main__":
