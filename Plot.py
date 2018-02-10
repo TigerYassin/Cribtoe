@@ -6,7 +6,18 @@ conn =sqlite3.connect("Coins9.db")
 c = conn.cursor()
 
 
-
+def printAny(val, num):
+    c.execute("SELECT '%s' FROM Cryptopia WHERE tradePairID='%d'"%(val,num))
+    value = c.fetchall()
+    X_Val, Y_Val = [], []
+    for x in range(1100):
+        X_Val.append(x)
+        Y_Val.append(value[x])
+    print(X_Val)
+    print(Y_Val)
+    plt.xlabel('time (s)')
+    plt.title('%s'%val)
+    plt.ylabel('%s'%val)
 
 
 
